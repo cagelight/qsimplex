@@ -157,19 +157,54 @@ void rend_4dt(RenderSettings const & rs) {
 	meadow::noise::simplex noise;
 	noise.seed();
 	
-	double TILE_M = rs.scale / meadow::brassica::pi_m<double>(2);
+	double m = rs.scale / meadow::brassica::pi_m<double>(2);
 	
 	for (size_t y = 0; y < rs.dims; y++) {
 		double yv = (static_cast<double>(y) / rs.dims) * meadow::brassica::pi_m<double>(2);
 		uint16_t * line = reinterpret_cast<uint16_t *>(img.scanLine(y));
 		for (size_t x = 0; x < rs.dims; x++) {
 			double xv = (static_cast<double>(x) / rs.dims) * meadow::brassica::pi_m<double>(2);
-			line[x] = (noise.generate(std::sin(xv) * TILE_M, std::cos(xv) * TILE_M, std::sin(yv) * TILE_M, std::cos(yv) * TILE_M) + 1) * std::numeric_limits<uint16_t>::max() / 2;
+			line[x] = (noise.generate(std::sin(xv) * m, std::cos(xv) * m, std::sin(yv) * m, std::cos(yv) * m) + 1) * std::numeric_limits<uint16_t>::max() / 2;
 		}
 	}
 	
 	rs.write_cb(img, "");
 }
+
+// ================
+// 4du
+// ================
+
+void rend_4du(RenderSettings const & rs) {
+	QImage img { rs.dims, rs.dims, QImage::Format_Grayscale16 };
+	meadow::noise::simplex noise;
+	noise.seed();
+	
+	double m = rs.scale / meadow::brassica::pi_m<double>(2);
+	
+	for (size_t i = 0; i < rs.frames; i++) {
+		
+		double xs, ys;
+		xs = ys = (i / static_cast<double>(rs.frames)) * meadow::brassica::pi_m<double>(2);
+		xs = std::sin(xs) * rs.anim;
+		ys = std::cos(ys) * rs.anim;
+		
+		for (size_t y = 0; y < rs.dims; y++) {
+			
+			double yv = (static_cast<double>(y) / rs.dims) * meadow::brassica::pi_m<double>(2);
+			uint16_t * line = reinterpret_cast<uint16_t *>(img.scanLine(y));
+			
+			for (size_t x = 0; x < rs.dims; x++) {
+				double xv = (static_cast<double>(x) / rs.dims) * meadow::brassica::pi_m<double>(2);
+				line[x] = (noise.generate(std::sin(xv) * m + xs, std::cos(xv) * m + ys, std::sin(yv) * m + xs, std::cos(yv) * m + ys) + 1) * std::numeric_limits<uint16_t>::max() / 2;
+			}
+		}
+		
+		rs.write_cb(img, QStringLiteral("%1").arg(i, 5, 10, QLatin1Char('0')));
+	}
+}
+
+// ================
 
 QMap<QString, QPair<QString, RendFunc>> rend_funcs {
 	{ QString("2d"),   { QString("2D algorithm"),                rend_2d  } },
@@ -177,7 +212,8 @@ QMap<QString, QPair<QString, RendFunc>> rend_funcs {
 	{ QString("3da"),  { QString("3D algorithm, non-loop anim"), rend_3da } },
 	{ QString("4d"),   { QString("4D algorithm"),                rend_4d  } },
 	{ QString("4da"),  { QString("4D algorithm, looping anim"),  rend_4da } },
-	{ QString("4dt"),  { QString("4D algorithm, tiling"),        rend_4dt } }
+	{ QString("4dt"),  { QString("4D algorithm, tiling"),        rend_4dt } },
+	{ QString("4du"),  { QString("4D algorithm, sacrifies uniformity to achieve both looping animation and tiling"), rend_4du } }
 };
 
 QString generate_mode_help() {
