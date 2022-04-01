@@ -184,10 +184,12 @@ void rend_4du(RenderSettings const & rs) {
 	
 	for (size_t i = 0; i < rs.frames; i++) {
 		
-		double xs, ys;
-		xs = ys = (i / static_cast<double>(rs.frames)) * meadow::brassica::pi_m<double>(2);
+		double xs, ys, zs, ws;
+		xs = ys = zs = ws = (i / static_cast<double>(rs.frames)) * meadow::brassica::pi_m<double>(2);
 		xs = std::sin(xs) * rs.anim;
 		ys = std::cos(ys) * rs.anim;
+		zs = std::sin(zs + meadow::brassica::pi_m<double>(0.25)) * rs.anim;
+		ws = std::cos(ws + meadow::brassica::pi_m<double>(0.25)) * rs.anim;
 		
 		for (size_t y = 0; y < rs.dims; y++) {
 			
@@ -196,7 +198,7 @@ void rend_4du(RenderSettings const & rs) {
 			
 			for (size_t x = 0; x < rs.dims; x++) {
 				double xv = (static_cast<double>(x) / rs.dims) * meadow::brassica::pi_m<double>(2);
-				line[x] = (noise.generate(std::sin(xv) * m + xs, std::cos(xv) * m + ys, std::sin(yv) * m + xs, std::cos(yv) * m + ys) + 1) * std::numeric_limits<uint16_t>::max() / 2;
+				line[x] = (noise.generate(std::sin(xv) * m + xs, std::cos(xv) * m + ys, std::sin(yv) * m + zs, std::cos(yv) * m + ws) + 1) * std::numeric_limits<uint16_t>::max() / 2;
 			}
 		}
 		
@@ -333,14 +335,14 @@ int main(int argc, char * * argv) {
 	// ================
 	
 	rs.write_cb = [&](QImage img, QString suffix){
-		QString out_path = parser.positionalArguments().at(0) + (suffix.isEmpty() ? ".png" : "_" + suffix + ".png");
+		QString out_path = parser.positionalArguments().at(0) + (suffix.isEmpty() ? ".ppm" : "_" + suffix + ".ppm");
 		QFile out { out_path };
 		if (!out.open(QIODevice::WriteOnly)) {
 			qDebug() << "output could not be opened for writing!\n";
 			exit(-1);
 		}
 		
-		QImageWriter imgw { &out, "png" };
+		QImageWriter imgw { &out, "ppm" };
 		imgw.write(img);
 	};
 	
